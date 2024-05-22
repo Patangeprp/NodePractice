@@ -3,36 +3,32 @@ const router = express.Router();
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const db = require('../config/db');
+const path=require('path');
 
 // Register User
-router.post('/register', (req, res) => {
+router.post('/register', (req, res) => { //the data has come into the req by post 
     console.log(req.body);
-    const { name, email, dateOfBirth, password } = req.body;
+    const { name, email, dateOfBirth, password } = req.body; //destructuring of data
     const hashedPassword = bcrypt.hashSync(password, 8);
     
     db.query('INSERT INTO users (name, email, dateOfBirth, password) VALUES (?, ?, ?, ?)', 
     [name, email, dateOfBirth, hashedPassword], (err, results) => {
         if (err) return res.status(500).send('Server error');
         res.status(200).send('User registered successfully');
+        if(results){
+            console.log(results);
+            res.redirect('/login');
+        }
     });
 });
 
 // Login User
-router.post('/login', (req, res) => {
-    const { email, password } = req.body;
+router.get('/login',(req,res)=>{
+    res.sendFile(path.join(__dirname,'../public','login.html'))
+})
 
-    db.query('SELECT * FROM users WHERE email = ?', [email], (err, results) => {
-        if (err) return res.status(500).send('Server error');
-        if (results.length === 0) return res.status(404).send('User not found');
-
-        const user = results[0];
-        const isValidPassword = bcrypt.compareSync(password, user.password);
-
-        if (!isValidPassword) return res.status(401).send('Invalid password');
-
-        const token = jwt.sign({ id: user.id }, 'secretkey', { expiresIn: '1h' });
-        res.status(200).send({ auth: true, token });
-    });
-});
+router.post('/login',(req,res)=>{
+    console.log(req.body);
+})
 
 module.exports = router;
